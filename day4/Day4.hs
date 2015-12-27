@@ -22,13 +22,16 @@ startsWithZeroes n = BS.isPrefixOf (C8.pack $ replicate n '0') . B16.encode
 message :: String -> Int -> Message
 message key i = C8.pack $ key ++ show i
 
+digests :: [Digest]
+digests = map (md5 . message secret) [1..]
+
 untilSolution :: Int -> Int
 untilSolution nZeroes = until (startsWithZeroes nZeroes . md5 . message secret) (+1) 1
 
 findSolution :: Int -> Maybe Int
-findSolution nZeroes = fmap (+1) . findIndex (startsWithZeroes nZeroes) . map (md5 . message secret) $ [1..]
+findSolution nZeroes = fmap (+1) . findIndex (startsWithZeroes nZeroes) $ digests
 
 main :: IO ()
 main = do
-    forM_ [5, 6] $ \i -> print $ untilSolution i
+    -- forM_ [5, 6] $ \i -> print $ untilSolution i
     forM_ [5, 6] $ \i -> print $ findSolution i
