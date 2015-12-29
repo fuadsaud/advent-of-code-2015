@@ -35,13 +35,31 @@ turnOff p1 p2 = mapWithIndex (swapElement (const 0) p1 p2)
 toggle :: Point -> Point -> GridTransformation
 toggle p1 p2 = mapWithIndex (swapElement toggleInt p1 p2)
 
-transformation :: Instruction -> GridTransformation
-transformation (TurnOn p1 p2) = turnOn p1 p2
-transformation (TurnOff p1 p2) = turnOff p1 p2
-transformation (Toggle p1 p2) = toggle p1 p2
+increaseBrightness :: Point -> Point -> GridTransformation
+increaseBrightness p1 p2 = mapWithIndex (swapElement (+1) p1 p2)
 
-compute :: String -> GridTransformation
-compute = transformation .  parse . tokenize . splitOn " "
+decreaseBrightness :: Point -> Point -> GridTransformation
+decreaseBrightness p1 p2 = mapWithIndex (swapElement safeDecrement p1 p2)
+  where
+      safeDecrement x = if (x - 1) >= 0
+                        then x - 1
+                        else 0
+
+doubleIncreaseBrightness :: Point -> Point -> GridTransformation
+doubleIncreaseBrightness p1 p2 = mapWithIndex (swapElement (+2) p1 p2)
+
+onOffTransformation :: Instruction -> GridTransformation
+onOffTransformation (TurnOn p1 p2) = turnOn p1 p2
+onOffTransformation (TurnOff p1 p2) = turnOff p1 p2
+onOffTransformation (Toggle p1 p2) = toggle p1 p2
+
+intensityTransformation :: Instruction -> GridTransformation
+intensityTransformation (TurnOn p1 p2) = increaseBrightness p1 p2
+intensityTransformation (TurnOff p1 p2) = decreaseBrightness p1 p2
+intensityTransformation (Toggle p1 p2) = doubleIncreaseBrightness p1 p2
+
+compute :: (Instruction -> GridTransformation) -> String -> GridTransformation
+compute transformation = transformation .  parse . tokenize . splitOn " "
 
 applyTransformations :: Grid -> [GridTransformation] -> Grid
 applyTransformations = foldl (&)
@@ -49,10 +67,15 @@ applyTransformations = foldl (&)
 countLightsOn :: Grid -> Int
 countLightsOn = length . filter (==1) . concat . toList
 
+totalLightsIntensity :: Grid -> Int
+totalLightsIntensity = sum . concat . toList
+
 main :: IO ()
 main = do
     input <- readFile "input"
 
-    let transformations = map compute . lines $ input
+    let onOffTransformations = map (compute onOffTransformation) . lines $ input
+    let intensityTransformations = map (compute intensityTransformation) . lines $ input
 
-    print . countLightsOn . applyTransformations initialGrid $ transformations
+    -- print . countLightsOn . applyTransformations initialGrid $ onOffTransformations
+    print . totalLightsIntensity . applyTransformations initialGrid $ intensityTransformations
